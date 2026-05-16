@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Noema Obfuscator</title>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"/>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css"/>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Inter,Segoe UI,sans-serif;
+}
+
+html,body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#080808;
+}
+
+body{
+    display:flex;
+    flex-direction:column;
+}
+
+.topbar{
+    height:54px;
+    min-height:54px;
+    background:#0d0d0d;
+    border-bottom:1px solid #1a1a1a;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 14px;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.logo-box{
+    width:9px;
+    height:9px;
+    border-radius:2px;
+    background:white;
+}
+
+.logo h1{
+    font-size:14px;
+    font-weight:700;
+    color:#f5f5f5;
+}
+
+.controls{
+    display:flex;
+    gap:8px;
+}
+
+button{
+    background:#151515;
+    color:white;
+    border:1px solid #242424;
+    padding:6px 11px;
+    border-radius:7px;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d1d1d;
+}
+
+.workspace{
+    flex:1;
+    display:grid;
+    grid-template-rows:1fr auto;
+    background:#1a1a1a;
+    overflow:hidden;
+}
+
+.editors{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:1px;
+    min-height:0;
+}
+
+.panel{
+    background:#101010;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    min-height:0;
+}
+
+.panel-header{
+    height:34px;
+    display:flex;
+    align-items:center;
+    padding:0 10px;
+    font-size:10px;
+    font-weight:700;
+    color:#8f8f8f;
+    border-bottom:1px solid #1a1a1a;
+}
+
+.editor-container{
+    flex:1;
+    position:relative;
+    overflow:hidden;
+}
+
+.CodeMirror{
+    position:absolute !important;
+    inset:0;
+    height:100% !important;
+    background:#101010 !important;
+    font-size:13px;
+}
+
+.CodeMirror-scroll{
+    overflow:auto !important;
+}
+
+.CodeMirror-gutters{
+    background:#101010 !important;
+    border-right:1px solid #1a1a1a !important;
+}
+
+.cm-s-material-darker .CodeMirror-cursor{
+    border-left:1px solid white;
+}
+
+.configs{
+    height:240px;
+    background:#0d0d0d;
+    border-top:1px solid #1a1a1a;
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    overflow-y:auto;
+}
+
+.configs-title{
+    font-size:10px;
+    font-weight:700;
+    color:#9c9c9c;
+    letter-spacing:1px;
+}
+
+.config-item{
+    display:flex;
+    gap:10px;
+    cursor:pointer;
+    user-select:none;
+}
+
+.config-item input{
+    appearance:none;
+    width:14px;
+    height:14px;
+    border:1px solid #333;
+    border-radius:3px;
+    background:#111;
+    display:grid;
+    place-items:center;
+}
+
+.config-item input:checked{
+    background:#f2f2f2;
+}
+
+.config-text{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+}
+
+.config-name{
+    font-size:12px;
+    font-weight:700;
+    color:#eee;
+}
+
+.config-desc{
+    font-size:10px;
+    color:#777;
+}
+
+.header-box{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.select{
+    background:#111;
+    color:#eee;
+    border:1px solid #2a2a2a;
+    font-size:11px;
+    padding:6px;
+    border-radius:6px;
+}
+
+.smallbtn{
+    background:#151515;
+    color:white;
+    border:1px solid #2a2a2a;
+    padding:6px 10px;
+    border-radius:6px;
+    font-size:11px;
+    cursor:pointer;
+}
+
+.smallbtn:hover{
+    background:#1d1d1d;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+    <div class="logo">
+        <div class="logo-box"></div>
+        <h1>Noema Obfuscator | V0.1</h1>
+    </div>
+
+    <div class="controls">
+        <button id="obfuscateBtn">Obfuscate</button>
+        <button id="copyBtn">Copy</button>
+    </div>
+</div>
+
+<div class="workspace">
+
+    <div class="editors">
+
+        <div class="panel">
+            <div class="panel-header">INPUT</div>
+            <div class="editor-container">
+                <textarea id="inputEditor"></textarea>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">OUTPUT</div>
+            <div class="editor-container">
+                <textarea id="outputEditor"></textarea>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="configs">
+
+        <div class="configs-title">CONFIGS</div>
+
+        <label class="config-item">
+            <input type="checkbox" id="privacy">
+            <div class="config-text">
+                <div class="config-name">PRIVACY MODE</div>
+                <div class="config-desc">removes signature comment</div>
+            </div>
+        </label>
+
+        <label class="config-item">
+            <input type="checkbox" id="v01" checked>
+            <div class="config-text">
+                <div class="config-name">Noema V0.1</div>
+                <div class="config-desc">base64 obfuscation layer</div>
+            </div>
+        </label>
+
+        <label class="config-item">
+            <input type="checkbox" id="minify">
+            <div class="config-text">
+                <div class="config-name">Minify</div>
+                <div class="config-desc">single-line output</div>
+            </div>
+        </label>
+
+        <div class="configs-title">HEADER</div>
+
+        <div class="header-box">
+
+            <select class="select" id="fakeHeader">
+                <option value="">Choose fake comment</option>
+                <option value="moonsec">MoonSecV3 (BETA)</option>
+                <option value="goofy">Goofyscator</option>
+                <option value="wearedevs">wearedevs</option>
+                <option value="luraph">Luraph</option>
+            </select>
+
+            <button class="smallbtn" id="applyHeader">Use fake comment (requires privacy mode on)</button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/lua/lua.min.js"></script>
+
+<script>
+const input = CodeMirror.fromTextArea(document.getElementById("inputEditor"), {
+    mode:"text/x-lua",
+    theme:"material-darker",
+    lineNumbers:true
+});
+
+const output = CodeMirror.fromTextArea(document.getElementById("outputEditor"), {
+    mode:"text/x-lua",
+    theme:"material-darker",
+    lineNumbers:true,
+    readOnly:true
+});
+
+input.setValue(`local msg="Noema"
+print(msg)`);
+
+function b64encode(str){
+    return btoa(unescape(encodeURIComponent(str)));
+}
+
+function nextName(i){
+    const chars="abcdefghijklmnopqrstuvwxyz";
+    let name="";
+    do{
+        name=chars[i%26]+name;
+        i=Math.floor(i/26)-1;
+    }while(i>=0);
+    return name;
+}
+
+function renameLua(code){
+    const reserved=[
+        "local","function","end","if","then","else","elseif","for","while","do","return",
+        "in","and","or","not","true","false","nil"
+    ];
+
+    const tokens=[...new Set(code.match(/[a-zA-Z_][a-zA-Z0-9_]*/g)||[])];
+
+    let map={};
+    let idx=0;
+
+    for(let t of tokens){
+        if(!reserved.includes(t)){
+            map[t]=nextName(idx++);
+        }
+    }
+
+    for(let k in map){
+        let re=new RegExp("\\b"+k+"\\b","g");
+        code=code.replace(re,map[k]);
+    }
+
+    return code;
+}
+
+function buildRuntime(encoded){
+
+return `local a="${encoded}"
+local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
+local function c(d)
+d=string.gsub(d,'[^'..b..'=]','')
+return (d:gsub('.',function(e)
+if e=='=' then return '' end
+local f,g='',(b:find(e)-1)
+for h=6,1,-1 do f=f..(g%2^h-g%2^(h-1)>0 and '1' or '0') end
+return f
+end):gsub('%d%d%d%d%d%d%d%d',function(i)
+local j=0
+for k=1,8 do j=j+(i:sub(k,k)=='1' and 2^(8-k) or 0) end
+return string.char(j)
+end))
+end
+
+local x,y=pcall(function()
+local z=loadstring(c(a))
+if z then z() end
+end)
+
+if not x then warn(y) end`
+}
+
+let selectedHeader="";
+
+function getHeader(v){
+if(v==="moonsec") return "([[This file was protected with MoonSec V3]]):";
+if(v==="goofy") return "-- This file is protected by goofyscator V7.5 >> goofyscator.lua.cz <<\n";
+if(v==="wearedevs") return "--[[ v1.0.0 https://wearedevs.net/obfuscator ]]\n";
+if(v==="luraph") return "-- This file was protected using Luraph Obfuscator v14.7 [https://lura.ph/]\n"
+return "";
+}
+
+document.getElementById("applyHeader").onclick=()=>{
+selectedHeader=getHeader(document.getElementById("fakeHeader").value);
+};
+
+document.getElementById("obfuscateBtn").onclick=()=>{
+
+let code=input.getValue();
+
+const privacy=document.getElementById("privacy").checked;
+const v01=document.getElementById("v01").checked;
+const minify=document.getElementById("minify").checked;
+
+let banner="";
+
+if(!privacy){
+banner=`--[[
+What can be perceived can't be left unobfuscated
+Noema Obfuscation v0.1
+Join Discord: https://discord.gg/jE5zdP3Q5A
+Websites: noemaobf.vercel.app/index.html, noemaobf.netlify.app/index.html, jsjsjsuush148-cyber.github.io/NoemaObf/index.html
+]]\n`;
+}
+
+if(privacy && selectedHeader){
+banner=selectedHeader;
+}
+
+if(v01){
+code=renameLua(code);
+const encoded=b64encode(code);
+code=buildRuntime(encoded);
+}
+
+if(minify){
+code=code.replace(/\n/g," ");
+}
+
+output.setValue(banner+code);
+};
+
+document.getElementById("copyBtn").onclick = async () => {
+    await navigator.clipboard.writeText(output.getValue());
+};
+</script>
+
+</body>
+</html>
